@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FBTI 美食品鉴人格鉴定 - 你到底多会吃？</title>
+    <style>
+        :root {
+            --primary: #e63946; /* 番茄红 */
+            --accent: #f1faee;
+            --highlight: #f1c40f; /* 煎蛋黄 */
+            --dark: #1d3557;
+            --bg: #fdf0d5;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'PingFang SC', sans-serif; }
+        body { background: var(--bg); color: var(--dark); display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 480px; }
+
+        .screen { background: #fff; padding: 35px 25px; border-radius: 30px; box-shadow: 0 15px 35px rgba(230,57,70,0.1); text-align: center; }
+        
+        h1 { font-size: 3rem; font-weight: 900; color: var(--primary); margin-bottom: 5px; }
+        .subtitle { color: #8d99ae; margin-bottom: 30px; font-size: 0.95rem; }
+
+        button { 
+            background: var(--primary); color: white; border: none; padding: 18px; 
+            border-radius: 20px; font-size: 1.15rem; font-weight: bold; cursor: pointer;
+            transition: 0.2s; width: 100%; margin-top: 10px;
+        }
+        button:active { transform: scale(0.96); }
+
+        /* 答题区 */
+        .progress-box { width: 100%; height: 8px; background: #eee; border-radius: 10px; margin-bottom: 30px; }
+        .progress-fill { height: 100%; background: var(--primary); border-radius: 10px; transition: width 0.3s; }
+        .question { font-size: 1.3rem; font-weight: bold; margin-bottom: 30px; text-align: left; line-height: 1.5; min-height: 4em; color: var(--dark); }
+        .options { display: grid; gap: 12px; }
+        .option { 
+            background: #fff5f5; padding: 20px; border-radius: 18px; text-align: left; 
+            cursor: pointer; border: 2px solid transparent; transition: 0.2s; font-size: 1rem;
+        }
+        .option:hover { border-color: var(--primary); background: #fff0f0; }
+
+        /* 结果展示 */
+        .persona-name { font-size: 2.8rem; font-weight: 900; color: var(--primary); margin: 10px 0 25px 0; }
+        .bento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; text-align: left; }
+        .bento-item { background: #fffcf2; padding: 18px; border-radius: 22px; border: 1px solid #fcefb4; }
+        .full { grid-column: span 2; }
+        .bento-item label { display: block; font-size: 0.75rem; color: #b7b7a4; font-weight: bold; margin-bottom: 8px; }
+        .comment-text { color: #d62828; font-weight: bold; font-size: 1.1rem; line-height: 1.4; }
+        
+        .stat-bar { height: 6px; background: #eee; border-radius: 3px; margin-top: 8px; position: relative; overflow: hidden; }
+        .stat-fill { position: absolute; height: 100%; background: var(--highlight); }
+
+        .hidden { display: none; }
+        .footer { margin-top: 25px; font-size: 0.8rem; color: #adb5bd; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="start-screen" class="screen">
+        <div style="font-size: 4rem; margin-bottom: 10px;">🍲</div>
+        <h1>FBTI</h1>
+        <p class="subtitle">美食品鉴人格鉴定报告<br>Food Behavior Type Indicator</p>
+        <p style="font-size: 0.85rem; color: #666; margin-bottom: 25px;">测测你在饭桌上到底是个什么物种</p>
+        <button onclick="startQuiz()">进入美食审判</button>
+    </div>
+
+    <div id="quiz-screen" class="screen hidden">
+        <div class="progress-box"><div class="progress-fill" id="p-fill" style="width: 0%"></div></div>
+        <div class="question" id="q-text">Loading...</div>
+        <div class="options" id="options"></div>
+    </div>
+
+    <div id="result-screen" class="screen hidden">
+        <p style="font-size: 0.9rem; color: #666;">你的美食品鉴人格是：</p>
+        <div class="persona-name" id="res-name">大胃袋良子</div>
+        
+        <div class="bento-grid">
+            <div class="bento-item full">
+                <label>🔥 毒舌锐评</label>
+                <p id="res-comment" class="comment-text"></p>
+            </div>
+            <div class="bento-item">
+                <label>👅 味觉偏好</label>
+                <div style="font-size: 0.8rem;">探索欲 <div class="stat-bar"><div class="stat-fill" id="b-exp"></div></div></div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">刺激度 <div class="stat-bar"><div class="stat-fill" id="b-stim"></div></div></div>
+            </div>
+            <div class="bento-item">
+                <label>🍗 战斗力</label>
+                <div style="font-size: 0.8rem;">食量指数 <div class="stat-bar"><div class="stat-fill" id="b-vol" style="background:var(--primary)"></div></div></div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">觅食执念 <div class="stat-bar"><div class="stat-fill" id="b-obs"></div></div></div>
+            </div>
+            <div class="bento-item full" style="background: #fff9db;">
+                <label>💡 给你的喂食建议</label>
+                <p id="res-advice" style="font-size: 0.9rem; line-height: 1.4; color: #856404;"></p>
+            </div>
+        </div>
+        
+        <button onclick="location.reload()" style="background:#457b9d; margin-top: 20px;">重新鉴定</button>
+        <div class="footer">FBTI Foodie Research · 2024</div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        // 觅食执念 (OBS)
+        {q:"听说50公里外的偏僻郊区有一家绝顶烧烤摊：", a:"周五晚上下班立马开车杀过去", b:"太远了，家门口随便吃点得了", dim:"OBS", sa:5, sb:1},
+        {q:"窗外下着瓢泼大雨，但你突然疯狂想吃某家拉面：", a:"穿上雨衣/趟水也要去吃这一口", b:"点个外卖（哪怕超时），或者吃泡面", dim:"OBS", sa:5, sb:1},
+        {q:"为了吃一家排队3小时的网红店，你会：", a:"拿个小板凳坐等，刷剧度过", b:"看到排队超过30分钟直接拉黑", dim:"OBS", sa:5, sb:1},
+        {q:"凌晨三点，你突然饿醒了：", a:"必须搜出附近还在开门的烧烤/宵夜", b:"喝口水强迫自己睡着", dim:"OBS", sa:5, sb:1},
+        {q:"去外地旅游，你的行程安排是：", a:"全是好吃的店，景点只是消食的空隙", b:"主要是看风景，吃饭随缘", dim:"OBS", sa:5, sb:1},
+
+        // 食量与态度 (VOL)
+        {q:"饭桌上大家都吃饱了，还剩不少菜：", a:"只要还能塞，必须清盘，绝不浪费", b:"矜持放下筷子，看着服务员收走", dim:"VOL", sa:5, sb:1},
+        {q:"一个人吃饭时，你的点餐量：", a:"想吃的都点，大不了打包（或者吃完）", b:"严谨点一份主食，刚好饱就行", dim:"VOL", sa:5, sb:1},
+        {q:"关于‘第二份半价’或‘自助餐’：", a:"那简直是为我量身定做的挑战", b:"不感兴趣，我胃口小吃不回来", dim:"VOL", sa:5, sb:1},
+        {q:"你的零食抽屉通常：", a:"满坑满谷，随时随地在咀嚼", b:"只有水，没有囤零食的习惯", dim:"VOL", sa:5, sb:1},
+        {q:"如果饭菜不好吃，你会：", a:"为了填饱肚子忍辱负重全部吃完", b:"吃两口就放下，宁愿饿着", dim:"VOL", sa:5, sb:1},
+
+        // 探索欲与偏好 (EXP)
+        {q:"进店点餐前，你的固定动作：", a:"刷遍点评看推荐菜和避雷帖", b:"直接看菜单图片，哪个顺眼点哪个", dim:"EXP", sa:5, sb:1},
+        {q:"关于装修简陋但味道极好的‘破店’：", a:"苍蝇馆子才是人间正道", b:"卫生第一，环境太差咽不下去", dim:"EXP", sa:5, sb:1},
+        {q:"手机先吃：菜上齐了你会？", a:"全方位构图拍照，滤镜调好才动筷", b:"谁敢拦着我夹菜我跟谁急", dim:"EXP", sa:5, sb:1},
+        {q:"面对菜单上的‘老板特调/盲盒菜’：", a:"必须试试，生活需要惊喜", b:"拒绝，万一难吃会毁掉一天的心情", dim:"EXP", sa:5, sb:1},
+        {q:"你会因为一个博主的推荐去跨城吃顿饭吗？", a:"会，我相信这种‘美食缘分’", b:"不会，网红推荐多半是智商税", dim:"EXP", sa:5, sb:1},
+
+        // 感官刺激 (STIM)
+        {q:"关于辣椒的耐受度：", a:"中辣起步，变态辣才是追求", b:"微辣是底线，最好是免辣", dim:"STIM", sa:5, sb:1},
+        {q:"关于香菜、葱蒜、折耳根：", a:"那是食物的灵魂，必须加满", b:"只要有一丝气味，这顿饭就毁了", dim:"STIM", sa:5, sb:1},
+        {q:"火锅蘸料台前，你是：", a:"炼金术士，各种酱料调制三大碗", b:"清淡派，最多只要点香油碟", dim:"STIM", sa:5, sb:1},
+        {q:"对于重油、重盐、重口味食物：", a:"吃得就是这个爽劲", b:"吃完狂喝水，心理负担极重", dim:"STIM", sa:5, sb:1},
+        {q:"关于甜品和奶茶：", a:"全糖加料，那是另一个胃装的", b:"无糖或不喝，拒绝工业甜味", dim:"STIM", sa:5, sb:1},
+
+        // 社交与消费 (SOC)
+        {q:"你更倾向于：", a:"呼朋引伴，热热闹闹围餐", b:"一人食，耳机一戴谁也不爱", dim:"SOC", sa:5, sb:1},
+        {q:"关于卡路里计算：", a:"吃完这顿再减，吃饭时谈热量是扫兴", b:"每一口都在心里换算成跑步里程", dim:"SOC", sa:5, sb:1},
+        {q:"看到精致但昂贵的Fine Dining：", a:"为了审美和体验可以偶尔奢侈", b:"这种分量不如去吃大排档实惠", dim:"SOC", sa:5, sb:1},
+        {q:"如果朋友点的菜很难吃：", a:"当场吐槽，大家一起排雷", b:"默默吃下，不想破坏聚餐气氛", dim:"SOC", sa:5, sb:1},
+        {q:"饭后结账时：", a:"精准计算各种团购券和积分", b:"直接付账，嫌麻烦", dim:"SOC", sa:5, sb:1}
+    ];
+
+    const personas = [
+        { name: "大胃袋良子", vector: [25, 25, 10, 15, 10], comment: "饭桌上的黑洞，碳水化合物的终结者。只要你不尴尬，尴尬的就是剩下的饭菜。", advice: "下次聚餐记得带上健胃消食片，顺便帮大家清一下盘。" },
+        { name: "地漆凳老饕", vector: [20, 10, 25, 25, 5], comment: "瞧不起白地毯和落地窗，坚信绝顶美味只存在于50公里外的塑料凳上。", advice: "虽然老店味正，但也请注意肠胃健康，别在暴雨天难为车胎。" },
+        { name: "手机先吃教主", vector: [10, 10, 25, 10, 25], comment: "你吃的不是饭，是快门快感。菜凉了没关系，朋友圈的赞必须热乎。", advice: "建议买个加热餐盘，或者找个耐心极好的男朋友。" },
+        { name: "卡路里会计师", vector: [10, 10, 15, 10, 10], comment: "吃炸鸡先撕皮，喝奶茶点代糖。你在放纵与罪恶之间达成了某种诡异的量子平衡。", advice: "既然都吃了，就别在那算加减法了，心脏累。" },
+        { name: "变态辣战神", vector: [15, 15, 10, 25, 10], comment: "味觉已经基本退化，只有能让灵魂颤抖的辣度才能让你感到自己还活着。", advice: "为了明天早上的菊花着想，请适度收手。" },
+        { name: "香菜暗杀者", vector: [10, 15, 15, 5, 10], comment: "味蕾敏感度堪比军用雷达。只要有一粒香菜，你就能在桌上表演原地爆炸。", advice: "建议出门自备‘禁止加葱姜蒜香菜’的印章。" },
+        { name: "排队受难者", vector: [25, 10, 25, 15, 20], comment: "网红店的首席信徒。排队的时间越长，你心理上的美味加成越高。", advice: "有时候，隔壁没人排队的店其实更好吃，真的。" },
+        { name: "深夜独行侠", vector: [15, 20, 10, 10, 5], comment: "耳机是你的结界，孤独是你的蘸料。在凌晨的宵夜摊前，你才是真正的王者。", advice: "一个人吃火锅其实不尴尬，尴尬的是你想上厕所没人帮你看包。" },
+        { name: "蘸料炼金术士", vector: [10, 15, 20, 20, 15], comment: "食材只是载体，蘸料才是灵魂。你能用蚝油、小米辣和麻酱调出通往天堂的钥匙。", advice: "既然这么会调，考虑下自己开个火锅店？" },
+        { name: "精致伪贵族", vector: [10, 10, 25, 5, 25], comment: "吃的是氛围，喝的是酒标。只要摆盘够艺术，就算吃的是预制菜你也能优雅点头。", advice: "仪式感虽好，但也别饿着肚子回家补泡面。" },
+        { name: "菜单调研员", vector: [20, 15, 25, 15, 15], comment: "点菜逻辑严密到让人发指。你不是在点菜，你是在进行一场关于荤素、干湿、口感的综合实验。", advice: "稍微放松点，偶尔点错一个菜并不会导致世界毁灭。" },
+        { name: "喂啥吃啥圣人", vector: [5, 5, 5, 5, 5], comment: "人类进化时的漏网之鱼。没有味蕾，只有填饱肚子的原始本能。某种程度上，你是最幸福的。", advice: "以后别问你想吃什么了，直接给你点个儿童套餐吧。" }
+    ];
+
+    let currentIdx = 0;
+    let userScores = { OBS: 0, VOL: 0, EXP: 0, STIM: 0, SOC: 0 };
+
+    function startQuiz() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.remove('hidden');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = questions[currentIdx];
+        document.getElementById('q-text').innerText = q.q;
+        document.getElementById('p-fill').style.width = `${(currentIdx / 25) * 100}%`;
+        
+        const optCont = document.getElementById('options');
+        optCont.innerHTML = '';
+        
+        [{t:q.a, s:q.sa}, {t:q.b, s:q.sb}].forEach(o => {
+            let div = document.createElement('div');
+            div.className = 'option';
+            div.innerText = o.t;
+            div.onclick = () => {
+                userScores[q.dim] += o.s;
+                currentIdx++;
+                if(currentIdx < 25) showQuestion(); else showResult();
+            };
+            optCont.appendChild(div);
+        });
+    }
+
+    function showResult() {
+        document.getElementById('quiz-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        
+        const uVec = [userScores.OBS, userScores.VOL, userScores.EXP, userScores.STIM, userScores.SOC];
+        let minD = Infinity;
+        let matched = personas[0];
+
+        personas.forEach(p => {
+            let d = 0;
+            for(let i=0; i<5; i++) d += Math.abs(uVec[i] - p.vector[i]);
+            
+            // 大胃袋良子特殊判定
+            if(p.name === "大胃袋良子" && userScores.VOL >= 22) d -= 10;
+            
+            if(d < minD) { minD = d; matched = p; }
+        });
+
+        document.getElementById('res-name').innerText = matched.name;
+        document.getElementById('res-comment').innerText = matched.comment;
+        document.getElementById('res-advice').innerText = matched.advice;
+        
+        document.getElementById('b-obs').style.width = (userScores.OBS / 25 * 100) + '%';
+        document.getElementById('b-vol').style.width = (userScores.VOL / 25 * 100) + '%';
+        document.getElementById('b-exp').style.width = (userScores.EXP / 25 * 100) + '%';
+        document.getElementById('b-stim').style.width = (userScores.STIM / 25 * 100) + '%';
+    }
+</script>
+
+</body>
+</html>
